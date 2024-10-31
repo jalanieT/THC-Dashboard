@@ -31,7 +31,7 @@
             top: 0;
             z-index: 1000;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            overflow: visible; /* Ensure contents are not cut off */
+            overflow: visible;
         }
 
         .header-content {
@@ -55,7 +55,7 @@
             display: flex;
             align-items: center;
             gap: 20px;
-	    font-size: 1.2em;
+            font-size: 1.2em;
         }
 
         .menu-item {
@@ -100,7 +100,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            height: auto; /* Allow the button height to adjust automatically */
+            height: auto;
             line-height: 1.2;
         }
 
@@ -188,20 +188,33 @@
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-        }
-
-        table, th, td {
-            border: 1px solid #272362;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         th, td {
             padding: 12px;
             text-align: left;
+            transition: background-color 0.3s ease;
         }
 
         th {
             background-color: #45528b;
             color: white;
+            font-weight: bold;
+        }
+
+        td {
+            background-color: #f9f9f9;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f4f4f4;
+        }
+
+        tr:hover td {
+            background-color: #e8f0ff;
         }
 
         .chart-container {
@@ -248,7 +261,7 @@
                 <div class="dropdown">
                     <a href="#">Referral Summary</a>
                     <a href="#">Client Bookings</a>
-                    <a href="#">Appointment Tracking</a>
+                    <a href="appt-tracking.html">Appointment Tracking</a>
                 </div>
             </div>
             <a href="index.html" class="button">My Dashboard</a>
@@ -261,19 +274,18 @@
                 <input type="text" id="searchBar" class="search-bar" placeholder="🔍 Search Practitioner..." oninput="showSuggestions()">
                 <div id="suggestions" class="suggestions" style="display: none;"></div>
             </div>
-            <select class="filter-dropdown" id="npsFilter">
+            <select class="filter-dropdown" id="npsFilter" onchange="applyFilters()">
                 <option value="">Filter by NPS Type</option>
                 <option value="promoter">Promoter</option>
                 <option value="passive">Passive</option>
                 <option value="detractor">Detractor</option>
             </select>
-            <select class="filter-dropdown" id="yearFilter">
+            <select class="filter-dropdown" id="yearFilter" onchange="applyFilters()">
                 <option value="">Filter by Year</option>
             </select>
-            <select class="filter-dropdown" id="monthFilter">
+            <select class="filter-dropdown" id="monthFilter" onchange="applyFilters()">
                 <option value="">Filter by Month</option>
             </select>
-            <button onclick="applyFilters()" class="button">Apply Filters</button>
             <button onclick="clearFilters()" class="button">Clear Filters</button>
         </div>
 
@@ -385,7 +397,7 @@
 
         document.addEventListener("DOMContentLoaded", async () => {
             fetchedData = await fetchDataFromGoogleSheet();
-            console.log('Data fetched:', fetchedData); // Debugging line
+            console.log('Data fetched:', fetchedData);
             if (!fetchedData || !fetchedData.values) {
                 showError('Failed to load data. Please try again later.');
                 return;
@@ -405,7 +417,7 @@
                     throw new Error(`Network response was not ok. Status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log('Data fetched successfully:', data); // Debugging line
+                console.log('Data fetched successfully:', data);
                 allPractitionerNames = [...new Set(data.values.map(row => row[3]).filter(name => name && name.toLowerCase() !== 'test'))];
                 return data;
             } catch (error) {
@@ -424,11 +436,11 @@
         }
 
         function clearFilters() {
-            document.getElementById('searchBar').value = '';
-            document.getElementById('npsFilter').value = '';
-            document.getElementById('yearFilter').value = '';
-            document.getElementById('monthFilter').value = '';
-            applyFilters();
+    document.getElementById('searchBar').value = '';
+    document.getElementById('npsFilter').value = '';
+    document.getElementById('yearFilter').value = new Date().getFullYear();
+    document.getElementById('monthFilter').value = '';
+    applyFilters();
         }
 
         function populateYearFilter(rows) {
@@ -471,7 +483,7 @@
             const month = document.getElementById('monthFilter').value;
 
             if (!fetchedData || !fetchedData.values) return;
-            console.log('Applying filters with data:', fetchedData); // Debugging line
+            console.log('Applying filters with data:', fetchedData);
             let filteredRows = fetchedData.values.filter(row => row[13] !== "" && row[3] && row[3].toLowerCase() !== 'test');
             if (searchText) {
                 filteredRows = filteredRows.filter(row => row[3] && row[3].toLowerCase().includes(searchText));
@@ -528,7 +540,7 @@
             npsPercentageTableBody.innerHTML = '';
             q10ResponsesTableBody.innerHTML = '';
 
-            console.log('Updating dashboard with rows:', rows); // Debugging line
+            console.log('Updating dashboard with rows:', rows);
 
             // Aggregating Monthly Data for NPS Count
             const monthlyAggregateData = {};
@@ -707,7 +719,7 @@
                         doughnutlabel: {
                             labels: [
                                 {
-                                    text: `Most responses on`,
+                                    text: "Most responses on",
                                     font: {
                                         size: 16,
                                         weight: 'bold'
