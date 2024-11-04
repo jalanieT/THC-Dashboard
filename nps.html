@@ -581,7 +581,7 @@
             for (const month in monthlyAggregateData) {
                 const data = monthlyAggregateData[month];
                 const totalResponses = data.promoter + data.passive + data.detractor;
-                const overallNPS = data.promoter - data.detractor;
+                const overallNPS = data.promoter + data.passive + data.detractor;
 
                 let npsMonthlyRow = npsMonthlyTableBody.insertRow();
                 npsMonthlyRow.insertCell().textContent = month;
