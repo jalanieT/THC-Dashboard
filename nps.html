@@ -578,6 +578,9 @@
             });
 
             // Populate Monthly NPS Count Table
+            let totalPromoter = 0;
+            let totalPassive = 0;
+            let totalDetractor = 0;
             for (const month in monthlyAggregateData) {
                 const data = monthlyAggregateData[month];
                 const totalResponses = data.promoter + data.passive + data.detractor;
@@ -590,6 +593,10 @@
                 npsMonthlyRow.insertCell().textContent = data.detractor;
                 npsMonthlyRow.insertCell().textContent = overallNPS;
 
+                totalPromoter += data.promoter;
+                totalPassive += data.passive;
+                totalDetractor += data.detractor;
+
                 // Populate Monthly NPS Percentage Table
                 let npsPercentageRow = npsPercentageTableBody.insertRow();
                 npsPercentageRow.insertCell().textContent = month;
@@ -598,6 +605,25 @@
                 npsPercentageRow.insertCell().textContent = Math.round((data.detractor / totalResponses) * 100) || 0;
                 npsPercentageRow.insertCell().textContent = Math.round(((data.promoter - data.detractor) / totalResponses) * 100) || 0;
             }
+
+            // Add Total Row to Monthly NPS Count Table
+            const totalResponses = totalPromoter + totalPassive + totalDetractor;
+            let totalRow = npsMonthlyTableBody.insertRow();
+            totalRow.className = 'total-row';
+            totalRow.insertCell().textContent = 'Total';
+            totalRow.insertCell().textContent = totalPromoter;
+            totalRow.insertCell().textContent = totalPassive;
+            totalRow.insertCell().textContent = totalDetractor;
+            totalRow.insertCell().textContent = totalResponses;
+
+            // Add Total Row to Monthly NPS Percentage Table
+            let totalPercentageRow = npsPercentageTableBody.insertRow();
+            totalPercentageRow.className = 'total-row';
+            totalPercentageRow.insertCell().textContent = 'Total';
+            totalPercentageRow.insertCell().textContent = Math.round((totalPromoter / totalResponses) * 100) || 0;
+            totalPercentageRow.insertCell().textContent = Math.round((totalPassive / totalResponses) * 100) || 0;
+            totalPercentageRow.insertCell().textContent = Math.round((totalDetractor / totalResponses) * 100) || 0;
+            totalPercentageRow.insertCell().textContent = Math.round(((totalPromoter - totalDetractor) / totalResponses) * 100) || 0;
 
             // Populate Practitioner NPS Monthly Table
             for (const practitioner in practitionerData) {
@@ -794,5 +820,12 @@
             });
         }
     </script>
+
+    <style>
+        .total-row {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+    </style>
 </body>
 </html>
