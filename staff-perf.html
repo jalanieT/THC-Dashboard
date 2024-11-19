@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Performance Dashboard</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/jantaw/THC-Dashboard/f7bd6b457a79a29fa774dec0861c650c30b90115/Elements/thc.png" type="image/png">
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f6fc;
+            margin: 0;
+            padding: 0;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 30px;
+            background-color: #f4f9fd;
+            color: #21b39b;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .loading-spinner p {
+            font-size: 1.2em;
+            color: #555;
+            margin-top: 15px;
+        }
+        .header img {
+            height: 50px;
+            width: auto;
+        }
+        .header h1 {
+            font-size: 2em;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 1.2em;
+        }
+        .menu-item {
+            position: relative;
+        }
+        .menu-item:hover .dropdown {
+            display: block;
+        }
+        .dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #ffffff;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            z-index: 100;
+        }
+        .dropdown a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: #0077b6;
+        }
+        .dropdown a:hover {
+            background-color: #f4f9fd;
+        }
+        .button {
+            padding: 8px 16px;
+            text-decoration: none;
+            color: #ffffff;
+            background-color: #21b39b;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #1a8a76;
+        }
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 100px auto 20px auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-container-full, .summary-box {
+            width: 100%;
+        }
+        .filters {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .filter-dropdown, .search-bar {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-width: 200px;
+            background: #ffffff;
+        }
+        .search-bar {
+            max-width: 300px;
+            padding: 12px 20px;
+            border: 2px solid #45528b;
+            border-radius: 50px;
+            font-size: 1rem;
+            outline: none;
+            transition: box-shadow 0.3s, border-color 0.3s;
+        }
+        .search-bar:focus {
+            border-color: #272362;
+            box-shadow: 0 0 10px rgba(39, 35, 98, 0.2);
+        }
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading-spinner .spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(0, 0, 0, 0.1);
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            transition: background-color 0.3s ease;
+        }
+
+        th {
+            background-color: #45528b;
+            color: white;
+            font-weight: bold;
+        }
+
+        td {
+            background-color: #f9f9f9;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f4f4f4;
+        }
+
+        tr:hover td {
+            background-color: #e8f0ff;
+        }
+
+        .side-by-side-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+        .chart-container {
+            position: relative;
+            height: 600px;
+	    width: 50%;
+            margin-bottom: 40px;
+        }
+        .scrollable-table-container {
+            max-height: 600px;
+	    width: 50%;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      
+        }
+        .scrollable-table-container h2 {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 3;
+            margin: 0;
+            padding-bottom: 10px;
+            padding-top: 10px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <img src="https://raw.githubusercontent.com/jalanieT/dashboard/1e2fab70d1bf84a40d976c5adea383424424d9ce/Assets/Total-Health-Choice_Logo-RGB.png" alt="Total Health Choice Logo">
+            <h1>Staff Performance Dashboard</h1>
+        </div>
+        <div class="menu">
+            <div class="menu-item">
+                <span>Finance</span>
+                <div class="dropdown">
+                    <a href="#">Staff Payroll</a>
+                    <a href="#">Revenue Report</a>
+                    <a href="#">Aged Debtor</a>
+                    <a href="#">Monthly Business Scorecard</a>
+                </div>
+            </div>
+            <div class="menu-item">
+                <span>Performance</span>
+                <div class="dropdown">
+                    <a href="#">Staff Performance</a>
+                    <a href="nps.html">Net Promoter Score</a>
+                    <a href="#">Staff Profitability</a>
+                    <a href="#">Staff Efficiency</a>
+                </div>
+            </div>
+            <div class="menu-item">
+                <span>Operations</span>
+                <div class="dropdown">
+                    <a href="#">Referral Summary</a>
+                    <a href="#">Client Bookings</a>
+                    <a href="appt-tracking.html">Appointment Tracking</a>
+                </div>
+            </div>
+            <a href="index.html" class="button">My Dashboard</a>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Filters Section -->
+<div class="filters">
+    <div style="position: relative;">
+        <input type="text" id="searchBar" class="search-bar" placeholder="🔍 Search Practitioner..." oninput="debounce(filterAndPopulateTables, 300)()">
+    </div>
+    <select id="yearFilter" class="filter-dropdown" onchange="filterAndPopulateTables()">
+        <option value="">Select Year</option>
+    </select>
+    <select id="monthFilter" class="filter-dropdown" onchange="filterAndPopulateTables()">
+        <option value="">Select Month</option>
+    </select>
+    <button id="clearFiltersButton" class="button" onclick="clearFilters()" style="background-color: #eb5f60; padding: 12px 24px;">Clear Filters</button>
+
+    <!-- Add Refresh Data Button Inline with Filters -->
+    <button class="button" onclick="fetchData()"style="background-color: #21b39b; padding: 12px 24px;">Refresh Data</button>
+</div>
+
+
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <p>Refreshing data, please wait...</p>
+        </div>
+
+    <!-- Staff Performance Interpretation (Summary Box) -->
+    <div class="summary-box" id="staffPerformanceSummary">
+              <p id="summaryText"></p>
+    </div>
+
+    <!-- Staff Performance Report Table -->
+    <div class="table-container-full">
+        <h2>Staff Performance Report</h2>
+        <table id="staffPerformanceReportTable">
+            <thead>
+                <tr>
+                    <th>Practitioner</th>
+                    <th>Cancelled #</th>
+                    <th>Cancelled %</th>
+                    <th>Did Not Arrive #</th>
+                    <th>Did Not Arrive %</th>
+                    <th>Incomplete Notes (#)</th>
+                    <th>Incomplete Notes (%)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+                <tr id="staffPerformanceTotalRow">
+                    <th>Total</th>
+                    <th id="totalCancelledCount"></th>
+                    <th id="totalCancelledPercentage"></th>
+                    <th id="totalDidNotArriveCount"></th>
+                    <th id="totalDidNotArrivePercentage"></th>
+                    <th id="totalIncompleteNotesCount"></th>
+                    <th id="totalIncompleteNotesPercentage"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+        <!-- Cancellation Reason per Practitioner and Chart Section -->
+        <div class="table-container-full">
+            <div class="side-by-side-container">
+                <!-- Cancellation Reason Table -->
+                <div class="scrollable-table-container">
+                    <h2 style="position: sticky; top: 0; background: #ffffff; z-index: 4;">Cancellation Reason per Practitioner</h2>
+                    <div class="table-container">
+                        <table id="cancellationReasonTable">
+                            <thead>
+                                <tr>
+                                    <th>Practitioner</th>
+                                    <th>Client</th>
+                                    <th>Date</th>
+                                    <th>Cancellation Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pie Chart Container -->
+                <div class="chart-container">
+                    <h2>Cancellation Reason Breakdown</h2>
+                    <canvas id="cancellationReasonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+const webAppUrl = "https://script.google.com/macros/s/AKfycbw1rXdvC3PQEWLANuJ_-9CIdaR0st_vf6pK1ef5wUYlDrjMOQZ7xMBI_fFKjniR2jK8/exec";
+let originalData = []; // Store the fetched data
+let mergedData = []; // Store merged data
+
+function getDefaultMetrics() {
+    return {
+        Arrived: 0,
+        Cancelled: 0,
+        DidNotArrive: 0,
+        DraftNotes: 0,
+        FinalizedNotes: 0,
+        TotalNotes: 0
+    };
+}
+
+function calculatePercentage(part, total) {
+    return total > 0 ? ((part / total) * 100).toFixed(2) : 0;
+}
+
+function updateStatusCounters(acc, practitioner, status, type) {
+    if (!acc[practitioner]) {
+        acc[practitioner] = getDefaultMetrics();
+    }
+
+    if (type === 'Status') {
+        if (status === 'arrived') {
+            acc[practitioner].Arrived++;
+            acc.Total.Arrived++;
+        } else if (status === 'cancelled') {
+            acc[practitioner].Cancelled++;
+            acc.Total.Cancelled++;
+        } else if (status === 'did not arrive') {
+            acc[practitioner].DidNotArrive++;
+            acc.Total.DidNotArrive++;
+        }
+    } else if (type === 'Note Status') {
+        if (status === 'draft') {
+            acc[practitioner].DraftNotes++;
+            acc.Total.DraftNotes++;
+        } else if (status === 'finalized') {
+            acc[practitioner].FinalizedNotes++;
+            acc.Total.FinalizedNotes++;
+        }
+        acc[practitioner].TotalNotes++;
+        acc.Total.TotalNotes++;
+    }
+}
+
+function filterByYearAndMonth(data, selectedYear, selectedMonth) {
+    return data.filter(item => {
+        const itemDate = new Date(item['Creation date'] || item.Date); // Use appropriate date field
+        const yearMatch = selectedYear ? itemDate.getFullYear().toString() === selectedYear : true;
+        const monthMatch = selectedMonth ? itemDate.toLocaleString('default', { month: 'long' }) === selectedMonth : true;
+        return yearMatch && monthMatch;
+    });
+}
+
+function calculateStaffPerformanceMetrics(filteredAppointments, filteredNoteStatus) {
+    const counts = filteredAppointments.concat(filteredNoteStatus).reduce((acc, item) => {
+        const practitioner = (item['Practitioner'] || '').trim();
+        if (!practitioner) return acc;
+
+        // Handle appointment metrics
+        if (item['Status']) {
+            const status = item['Status'].trim().toLowerCase();
+            updateStatusCounters(acc, practitioner, status, 'Status');
+        }
+
+        // Handle note metrics
+        if (item['Note Status']) {
+            const noteStatus = item['Note Status'].trim().toLowerCase();
+            updateStatusCounters(acc, practitioner, noteStatus, 'Note Status');
+        }
+
+        return acc;
+    }, {
+        Total: getDefaultMetrics()
+    });
+
+    console.log('Calculated Metrics:', counts); // Debugging Line
+    return counts;
+}
+
+function processFetchedData(data) {
+    let Appointments = Array.isArray(data.Appointments) ? data.Appointments : [];
+    let NoteStatus = Array.isArray(data['Note Status']) ? data['Note Status'] : [];
+
+    if (!Appointments.length) {
+        console.error('Appointments data is missing or empty:', Appointments);
+        return;
+    }
+
+    originalData = { Appointments, NoteStatus };
+
+    // Create a lookup dictionary for Note Status data
+    let noteStatusLookup = {};
+    NoteStatus.forEach(note => {
+        const key = `${note.Practitioner}-${new Date(note['Creation date']).toISOString().split('T')[0]}`;
+        noteStatusLookup[key] = note;
+        console.log('Note Key Created:', key); // Debugging Line
+    });
+
+    // Merge Appointments with Note Status
+    mergedData = Appointments.map(appointment => {
+        const parsedDate = new Date(appointment.Date);
+        const key = `${appointment.Practitioner}-${parsedDate.toISOString().split('T')[0]}`;
+        console.log('Appointment Key Created:', key); // Debugging Line
+        return {
+            ...appointment,
+            NoteStatus: noteStatusLookup[key]?.['Note Status'] || null,
+            parsedDate: parsedDate,
+            year: parsedDate.getFullYear(),
+            month: parsedDate.toLocaleString('default', { month: 'long' }),
+            monthIndex: parsedDate.getMonth()
+        };
+    });
+
+    console.log('Merged Data:', mergedData); // Debugging Line
+    populateYearFilter(mergedData);
+    populateMonthFilter(mergedData);
+    setDefaultFilters();
+    filterAndPopulateTables();
+    updateCancellationReasonChart(mergedData);
+}
+
+function fetchData(retryCount = 0) {
+    const spinnerText = document.querySelector('.loading-spinner p');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    spinnerText.textContent = 'Refreshing data, please wait...';
+    loadingSpinner.style.display = 'flex';
+
+    fetch(webAppUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            loadingSpinner.style.display = 'none';
+            spinnerText.textContent = 'Loading data, please wait...';
+            console.log('Fetched Data:', data); // Debugging Line
+            processFetchedData(data);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            if (retryCount < 3) {
+                console.log(`Retrying data fetch... Attempt ${retryCount + 1}`);
+                fetchData(retryCount + 1);
+            } else {
+                spinnerText.textContent = 'Error fetching data. Please try again later.';
+                loadingSpinner.style.display = 'none';
+            }
+        });
+}
+
+function populateYearFilter(data) {
+    if (!Array.isArray(data)) {
+        console.error("Invalid data passed to populateYearFilter:", data);
+        return;
+    }
+
+    const yearFilter = document.getElementById('yearFilter');
+    const years = [...new Set(data.map(item => item.year))].filter(year => year !== null).sort((a, b) => a - b);
+
+    yearFilter.innerHTML = '<option value="">Select Year</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
+}
+
+function populateMonthFilter(data) {
+    if (!Array.isArray(data)) {
+        console.error("Invalid data passed to populateMonthFilter:", data);
+        return;
+    }
+
+    const monthFilter = document.getElementById('monthFilter');
+    const months = [...new Set(data.map(item => item.month))].filter(month => month !== null);
+
+    monthFilter.innerHTML = `<option value="">Select Month</option>` + months.map(month => `<option value="${month}">${month}</option>`).join('');
+}
+
+function setDefaultFilters() {
+    const availableYears = [...new Set(mergedData.map(item => item.year))];
+    const availableMonths = [...new Set(mergedData.map(item => item.month))];
+
+    const currentYear = new Date().getFullYear().toString();
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+
+    document.getElementById('yearFilter').value = availableYears.includes(currentYear) ? currentYear : availableYears[0] || '';
+    document.getElementById('monthFilter').value = availableMonths.includes(currentMonth) ? currentMonth : availableMonths[0] || '';
+}
+
+function filterAndPopulateTables() {
+    const selectedYear = document.getElementById('yearFilter').value;
+    const selectedMonth = document.getElementById('monthFilter').value;
+    const searchQuery = document.getElementById('searchBar').value.trim().toLowerCase();
+
+    let filteredAppointments = filterByYearAndMonth(mergedData, selectedYear, selectedMonth);
+    let filteredNoteStatus = filterByYearAndMonth(originalData.NoteStatus, selectedYear, selectedMonth);
+
+    if (searchQuery) {
+        filteredAppointments = filteredAppointments.filter(item => item.Practitioner.toLowerCase().includes(searchQuery));
+        filteredNoteStatus = filteredNoteStatus.filter(note => note.Practitioner.toLowerCase().includes(searchQuery));
+    }
+
+    console.log('Filtered Appointments:', filteredAppointments); // Debugging Line
+    console.log('Filtered Note Status:', filteredNoteStatus); // Debugging Line
+
+    const metrics = calculateStaffPerformanceMetrics(filteredAppointments, filteredNoteStatus);
+    populateStaffPerformanceReportTable(metrics);
+    populateCancellationReasonTable(filteredAppointments);
+    updateCancellationReasonChart(filteredAppointments);
+}
+
+function clearFilters() {
+    document.getElementById('searchBar').value = '';
+    setDefaultFilters();
+    filterAndPopulateTables();
+}
+
+function debounce(func, delay = 500) {
+    let debounceTimer;
+    return function() {
+        const context = this;
+        const args = arguments;
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+function populateStaffPerformanceReportTable(metrics) {
+    const tableBody = document.getElementById('staffPerformanceReportTable').getElementsByTagName('tbody')[0];
+    let htmlContent = '';
+
+    const sortedPractitioners = Object.keys(metrics).filter(practitioner => practitioner !== 'Total').sort();
+    sortedPractitioners.forEach(practitioner => {
+        const data = metrics[practitioner];
+        const { cancelledPercentage, didNotArrivePercentage, incompleteNotesPercentage } = calculatePractitionerMetrics(data);
+
+        htmlContent += `
+            <tr>
+                <td>${practitioner}</td>
+                <td>${data.Cancelled.toLocaleString()}</td>
+                <td>${cancelledPercentage}%</td>
+                <td>${data.DidNotArrive.toLocaleString()}</td>
+                <td>${didNotArrivePercentage}%</td>
+                <td>${data.DraftNotes.toLocaleString()}</td>
+                <td>${incompleteNotesPercentage}%</td>
+            </tr>
+        `;
+    });
+
+    // Populate total values in the table footer
+    const totalData = metrics.Total || getDefaultMetrics();
+    const { cancelledPercentage: totalCancelledPercentage, didNotArrivePercentage: totalDidNotArrivePercentage, incompleteNotesPercentage: totalIncompleteNotesPercentage } = calculatePractitionerMetrics(totalData);
+
+    document.getElementById('totalCancelledCount').textContent = totalData.Cancelled.toLocaleString();
+    document.getElementById('totalCancelledPercentage').textContent = `${totalCancelledPercentage}%`;
+    document.getElementById('totalDidNotArriveCount').textContent = totalData.DidNotArrive.toLocaleString();
+    document.getElementById('totalDidNotArrivePercentage').textContent = `${totalDidNotArrivePercentage}%`;
+    document.getElementById('totalIncompleteNotesCount').textContent = totalData.DraftNotes.toLocaleString();
+    document.getElementById('totalIncompleteNotesPercentage').textContent = `${totalIncompleteNotesPercentage}%`;
+
+    tableBody.innerHTML = htmlContent;
+}
+
+function calculatePractitionerMetrics(data) {
+    const totalStatusCount = data.Cancelled + data.DidNotArrive + data.Arrived;
+    const cancelledPercentage = calculatePercentage(data.Cancelled, totalStatusCount);
+    const didNotArrivePercentage = calculatePercentage(data.DidNotArrive, totalStatusCount);
+    const incompleteNotesPercentage = calculatePercentage(data.DraftNotes, data.TotalNotes);
+
+    return {
+        cancelledPercentage,
+        didNotArrivePercentage,
+        incompleteNotesPercentage
+    };
+}
+
+function populateCancellationReasonTable(data) {
+    if (!Array.isArray(data) || data.length === 0) {
+        console.error("Invalid data passed to populateCancellationReasonTable:", data);
+        return;
+    }
+
+    const tableBody = document.getElementById('cancellationReasonTable').getElementsByTagName('tbody')[0];
+    let htmlContent = '';
+
+    data.forEach(item => {
+        if (item['Status'] && item['Status'].toLowerCase() === 'cancelled') {
+            htmlContent += `
+                <tr>
+                    <td>${item['Practitioner']}</td>
+                    <td>${item['Client']}</td>
+                    <td>${item.parsedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                    <td>${item['Cancellation reason'] || 'Unknown'}</td>
+                </tr>
+            `;
+        }
+    });
+
+    tableBody.innerHTML = htmlContent;
+}
+
+let cancellationReasonChart;
+function updateCancellationReasonChart(filteredData) {
+    if (!Array.isArray(filteredData) || filteredData.length === 0) return;
+
+    const selectedYear = document.getElementById('yearFilter').value;
+    const selectedMonth = document.getElementById('monthFilter').value;
+
+    const filteredChartData = filteredData.filter(item => {
+        return (!selectedYear || item.year.toString() === selectedYear) && (!selectedMonth || item.month === selectedMonth);
+    });
+
+    const ctx = document.getElementById('cancellationReasonChart').getContext('2d');
+    const cancellationReasons = {};
+
+    filteredChartData.forEach(item => {
+        if (item['Status'] && item['Status'].toLowerCase() === 'cancelled') {
+            const reason = item['Cancellation reason'] || 'Unknown';
+            cancellationReasons[reason] = (cancellationReasons[reason] || 0) + 1;
+        }
+    });
+
+    const labels = Object.keys(cancellationReasons);
+    const dataValues = Object.values(cancellationReasons);
+
+    if (cancellationReasonChart) {
+        cancellationReasonChart.data.labels = labels;
+        cancellationReasonChart.data.datasets[0].data = dataValues;
+        cancellationReasonChart.update();
+    } else {
+        cancellationReasonChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: ['#eb5f60', '#f5b041', '#82e0aa', '#3498db', '#9b59b6', '#f39c12'],
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Cancellation Reason Breakdown'
+                    }
+                }
+            }
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetchData();
+});
+</script>
+</body>
+</html>
